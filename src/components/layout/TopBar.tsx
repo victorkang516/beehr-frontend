@@ -39,7 +39,7 @@ const TopBar = () => {
 
   const handleLogout = () => {
     setIsDropdownOpen(false)
-    logout(() => navigate({ to: '/login' }))
+    logout(() => navigate({ to: '/auth' }))
   }
 
   const handleViewSwitch = () => {

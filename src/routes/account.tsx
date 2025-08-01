@@ -25,7 +25,7 @@ function Account() {
   }
 
   const handleLogout = () => {
-    logout(() => navigate({ to: '/login' }))
+    logout(() => navigate({ to: '/auth' }))
   }
 
   return (

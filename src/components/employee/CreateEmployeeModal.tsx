@@ -1,23 +1,32 @@
-import { useState } from 'react'
-import { cn } from '@utility/index'
-
-interface CreateEmployeeRequest {
-  firstName: string
-  lastName: string
-  email: string
-  password: string
-  department: string
-  position: string
-  role?: 'HR Admin' | 'Manager' | 'Employee'
-  joinDate: string
-  phone?: string
-  address?: string
-}
+import { useForm } from 'react-hook-form'
+import { yupResolver } from '@hookform/resolvers/yup'
+import * as yup from 'yup'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { api } from '@utility/api'
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
 
 interface CreateEmployeeModalProps {
   isOpen: boolean
   onClose: () => void
-  onSave: (employee: CreateEmployeeRequest) => void
+  onSuccess?: (employee: any) => void
 }
 
 const departments = [
@@ -29,68 +38,83 @@ const departments = [
   'Operations',
 ]
 
+// Yup validation schema
+const createEmployeeSchema = yup.object({
+  firstName: yup.string().required('First name is required').trim(),
+  lastName: yup.string().required('Last name is required').trim(),
+  email: yup
+    .string()
+    .required('Email is required')
+    .email('Email is invalid')
+    .trim(),
+  department: yup.string().required('Department is required'),
+  position: yup.string().required('Position is required').trim(),
+  role: yup
+    .string()
+    .oneOf(['HR Admin', 'Manager', 'Employee'], 'Invalid role')
+    .default('Employee'),
+  joinDate: yup.string().required('Join date is required'),
+  phone: yup.string().optional().default(''),
+  address: yup.string().optional().default(''),
+})
+
+// Type inference from schema
+type CreateEmployeeFormData = yup.InferType<typeof createEmployeeSchema>
+
 export default function CreateEmployeeModal({
   isOpen,
   onClose,
-  onSave,
+  onSuccess,
 }: CreateEmployeeModalProps) {
-  const [formData, setFormData] = useState<CreateEmployeeRequest>({
-    firstName: '',
-    lastName: '',
-    email: '',
-    password: '',
-    department: '',
-    position: '',
-    role: 'Employee',
-    joinDate: new Date().toISOString().split('T')[0],
-    phone: '',
-    address: '',
-  })
+  const queryClient = useQueryClient()
 
-  const [errors, setErrors] = useState<Record<string, string>>({})
-
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {}
-
-    if (!formData.firstName.trim())
-      newErrors.firstName = 'First name is required'
-    if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required'
-    if (!formData.email.trim()) newErrors.email = 'Email is required'
-    else if (!/\S+@\S+\.\S+/.test(formData.email))
-      newErrors.email = 'Email is invalid'
-    if (!formData.password.trim()) newErrors.password = 'Password is required'
-    else if (formData.password.length < 6)
-      newErrors.password = 'Password must be at least 6 characters'
-    if (!formData.department) newErrors.department = 'Department is required'
-    if (!formData.position.trim()) newErrors.position = 'Position is required'
-    if (!formData.joinDate) newErrors.joinDate = 'Join date is required'
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (validateForm()) {
-      onSave(formData)
-      handleClose()
-    }
-  }
-
-  const handleClose = () => {
-    setFormData({
+  // React Hook Form with Yup validation
+  const form = useForm<CreateEmployeeFormData>({
+    resolver: yupResolver(createEmployeeSchema),
+    defaultValues: {
       firstName: '',
       lastName: '',
       email: '',
-      password: '',
       department: '',
       position: '',
       role: 'Employee',
       joinDate: new Date().toISOString().split('T')[0],
       phone: '',
       address: '',
-    })
-    setErrors({})
+    },
+  })
+
+  // TanStack Query mutation for API call
+  const createEmployeeMutation = useMutation({
+    mutationFn: async (data: CreateEmployeeFormData) => {
+      const response = await api.post('/employees', data)
+      return response.data
+    },
+    onSuccess: data => {
+      // Invalidate and refetch employees query
+      queryClient.invalidateQueries({ queryKey: ['employees'] })
+
+      // Reset form
+      form.reset()
+
+      // Call success callback if provided
+      onSuccess?.(data)
+
+      // Close modal
+      onClose()
+    },
+    onError: (error: any) => {
+      console.error('Failed to create employee:', error)
+      // You could show a toast notification here
+    },
+  })
+
+  const onSubmit = (data: CreateEmployeeFormData) => {
+    createEmployeeMutation.mutate(data)
+  }
+
+  const handleClose = () => {
+    form.reset()
     onClose()
   }
 
@@ -106,253 +130,236 @@ export default function CreateEmployeeModal({
           <button
             onClick={handleClose}
             className="text-xl text-gray-400 hover:text-gray-600"
+            disabled={createEmployeeMutation.isPending}
           >
             ✕
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 p-6">
-          {/* First Name */}
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              First Name *
-            </label>
-            <input
-              type="text"
-              value={formData.firstName}
-              onChange={e =>
-                setFormData({ ...formData, firstName: e.target.value })
-              }
-              className={cn(
-                'w-full rounded-md border px-3 py-2',
-                'focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none',
-                errors.firstName ? 'border-red-500' : 'border-gray-200'
-              )}
-              placeholder="Enter first name"
-            />
-            {errors.firstName && (
-              <p className="mt-1 text-xs text-red-500">{errors.firstName}</p>
-            )}
-          </div>
+        <div className="p-6">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              {/* First Name */}
+              <FormField
+                control={form.control}
+                name="firstName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>First Name *</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Enter first name"
+                        {...field}
+                        disabled={createEmployeeMutation.isPending}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          {/* Last Name */}
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              Last Name *
-            </label>
-            <input
-              type="text"
-              value={formData.lastName}
-              onChange={e =>
-                setFormData({ ...formData, lastName: e.target.value })
-              }
-              className={cn(
-                'w-full rounded-md border px-3 py-2',
-                'focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none',
-                errors.lastName ? 'border-red-500' : 'border-gray-200'
-              )}
-              placeholder="Enter last name"
-            />
-            {errors.lastName && (
-              <p className="mt-1 text-xs text-red-500">{errors.lastName}</p>
-            )}
-          </div>
+              {/* Last Name */}
+              <FormField
+                control={form.control}
+                name="lastName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Last Name *</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Enter last name"
+                        {...field}
+                        disabled={createEmployeeMutation.isPending}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          {/* Email */}
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              Email Address *
-            </label>
-            <input
-              type="email"
-              value={formData.email}
-              onChange={e =>
-                setFormData({ ...formData, email: e.target.value })
-              }
-              className={cn(
-                'w-full rounded-md border px-3 py-2',
-                'focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none',
-                errors.email ? 'border-red-500' : 'border-gray-200'
-              )}
-              placeholder="Enter email address"
-            />
-            {errors.email && (
-              <p className="mt-1 text-xs text-red-500">{errors.email}</p>
-            )}
-          </div>
+              {/* Email */}
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email Address *</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="email"
+                        placeholder="Enter email address"
+                        {...field}
+                        disabled={createEmployeeMutation.isPending}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Employee will receive an email to set up their password
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          {/* Password */}
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              Password *
-            </label>
-            <input
-              type="password"
-              value={formData.password}
-              onChange={e =>
-                setFormData({ ...formData, password: e.target.value })
-              }
-              className={cn(
-                'w-full rounded-md border px-3 py-2',
-                'focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none',
-                errors.password ? 'border-red-500' : 'border-gray-200'
-              )}
-              placeholder="Enter password (min 6 characters)"
-            />
-            {errors.password && (
-              <p className="mt-1 text-xs text-red-500">{errors.password}</p>
-            )}
-          </div>
+              {/* Department */}
+              <FormField
+                control={form.control}
+                name="department"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Department *</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      disabled={createEmployeeMutation.isPending}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select department" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {departments.map(dept => (
+                          <SelectItem key={dept} value={dept}>
+                            {dept}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          {/* Department */}
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              Department *
-            </label>
-            <select
-              value={formData.department}
-              onChange={e =>
-                setFormData({ ...formData, department: e.target.value })
-              }
-              className={cn(
-                'w-full rounded-md border px-3 py-2',
-                'focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none',
-                errors.department ? 'border-red-500' : 'border-gray-200'
-              )}
-            >
-              <option value="">Select department</option>
-              {departments.map(dept => (
-                <option key={dept} value={dept}>
-                  {dept}
-                </option>
-              ))}
-            </select>
-            {errors.department && (
-              <p className="mt-1 text-xs text-red-500">{errors.department}</p>
-            )}
-          </div>
+              {/* Position */}
+              <FormField
+                control={form.control}
+                name="position"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Position *</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Enter position title"
+                        {...field}
+                        disabled={createEmployeeMutation.isPending}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          {/* Position */}
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              Position *
-            </label>
-            <input
-              type="text"
-              value={formData.position}
-              onChange={e =>
-                setFormData({ ...formData, position: e.target.value })
-              }
-              className={cn(
-                'w-full rounded-md border px-3 py-2',
-                'focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none',
-                errors.position ? 'border-red-500' : 'border-gray-200'
-              )}
-              placeholder="Enter position title"
-            />
-            {errors.position && (
-              <p className="mt-1 text-xs text-red-500">{errors.position}</p>
-            )}
-          </div>
+              {/* Join Date */}
+              <FormField
+                control={form.control}
+                name="joinDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Join Date *</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="date"
+                        {...field}
+                        disabled={createEmployeeMutation.isPending}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          {/* Join Date */}
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              Join Date *
-            </label>
-            <input
-              type="date"
-              value={formData.joinDate}
-              onChange={e =>
-                setFormData({ ...formData, joinDate: e.target.value })
-              }
-              className={cn(
-                'w-full rounded-md border px-3 py-2',
-                'focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none',
-                errors.joinDate ? 'border-red-500' : 'border-gray-200'
-              )}
-            />
-            {errors.joinDate && (
-              <p className="mt-1 text-xs text-red-500">{errors.joinDate}</p>
-            )}
-          </div>
+              {/* Role */}
+              <FormField
+                control={form.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Role</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      disabled={createEmployeeMutation.isPending}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select role" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Employee">Employee</SelectItem>
+                        <SelectItem value="Manager">Manager</SelectItem>
+                        <SelectItem value="HR Admin">HR Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          {/* Role */}
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              Role
-            </label>
-            <select
-              value={formData.role}
-              onChange={e =>
-                setFormData({
-                  ...formData,
-                  role: e.target.value as 'HR Admin' | 'Manager' | 'Employee',
-                })
-              }
-              className="w-full rounded-md border border-gray-200 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-            >
-              <option value="Employee">Employee</option>
-              <option value="Manager">Manager</option>
-              <option value="HR Admin">HR Admin</option>
-            </select>
-          </div>
+              {/* Phone (Optional) */}
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone Number</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="tel"
+                        placeholder="Enter phone number (e.g., +1555123456)"
+                        {...field}
+                        disabled={createEmployeeMutation.isPending}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          {/* Phone (Optional) */}
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              Phone Number
-            </label>
-            <input
-              type="tel"
-              value={formData.phone || ''}
-              onChange={e =>
-                setFormData({ ...formData, phone: e.target.value })
-              }
-              className="w-full rounded-md border border-gray-200 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              placeholder="Enter phone number (e.g., +1555123456)"
-            />
-          </div>
+              {/* Address (Optional) */}
+              <FormField
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Address</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Enter address"
+                        rows={2}
+                        {...field}
+                        disabled={createEmployeeMutation.isPending}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          {/* Address (Optional) */}
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              Address
-            </label>
-            <textarea
-              value={formData.address || ''}
-              onChange={e =>
-                setFormData({ ...formData, address: e.target.value })
-              }
-              className="w-full rounded-md border border-gray-200 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              placeholder="Enter address"
-              rows={2}
-            />
-          </div>
-
-          {/* Form Actions */}
-          <div className="flex gap-3 pt-4">
-            <button
-              type="button"
-              onClick={handleClose}
-              className={cn(
-                'flex-1 rounded-md border border-gray-200 px-4 py-2',
-                'text-gray-700 transition-colors duration-200 hover:bg-gray-50'
-              )}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className={cn(
-                'flex-1 rounded-md bg-blue-600 px-4 py-2 text-white',
-                'transition-colors duration-200 hover:bg-blue-700'
-              )}
-            >
-              Add Employee
-            </button>
-          </div>
-        </form>
+              {/* Form Actions */}
+              <div className="flex gap-3 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleClose}
+                  className="flex-1"
+                  disabled={createEmployeeMutation.isPending}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  className="flex-1"
+                  disabled={createEmployeeMutation.isPending}
+                >
+                  {createEmployeeMutation.isPending
+                    ? 'Adding...'
+                    : 'Add Employee'}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </div>
       </div>
     </div>
   )

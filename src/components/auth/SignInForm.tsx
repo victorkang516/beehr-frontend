@@ -1,4 +1,5 @@
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react'
+import { Link } from '@tanstack/react-router'
 import { cn } from '@utility/index'
 
 interface SignInFormProps {
@@ -119,9 +120,12 @@ export const SignInForm = ({
     {/* Forgot Password */}
     <div className="flex items-center justify-between">
       <div className="text-sm">
-        <a href="#" className="text-blue-600 hover:text-blue-500">
+        <Link
+          to="/forgot-password"
+          className="text-blue-600 hover:text-blue-500"
+        >
           Forgot your password?
-        </a>
+        </Link>
       </div>
     </div>
 

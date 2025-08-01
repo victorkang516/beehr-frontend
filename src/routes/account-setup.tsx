@@ -10,17 +10,15 @@ export const Route = createFileRoute('/account-setup')({
 })
 
 interface AccountSetupData {
-  employee: {
-    id: number
-    firstName: string
-    lastName: string
-    email: string
-    position: string
-    department: string
-  }
-  needsPasswordSetup: boolean
-  canLinkGoogle: boolean
-  isFirstLogin: boolean
+  id: number
+  firstName: string
+  lastName: string
+  email: string
+  position: string
+  department: string
+  needsPasswordReset?: boolean
+  isGoogleLinked?: boolean
+  firstLoginCompleted?: boolean
 }
 
 function AccountSetup() {
@@ -50,7 +48,10 @@ function AccountSetup() {
 
   const validateToken = async () => {
     try {
-      const response = await api.get(`/employees/validate-token/${token}`)
+      const response = await api.post(
+        `/employees/account-setup/validate-token/${token}`,
+        {}
+      )
       setSetupData(response.data)
       setStep('setup')
     } catch (err: any) {
@@ -59,6 +60,8 @@ function AccountSetup() {
       setLoading(false)
     }
   }
+
+  console.log('Setup Data:', setupData)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -77,8 +80,8 @@ function AccountSetup() {
     setError('')
 
     try {
-      await api.post(`/employees/complete/${token}`, {
-        password: formData.password,
+      await api.post(`/employees/account-setup/complete/${token}`, {
+        newPassword: formData.password,
         linkGoogleAccount: formData.linkGoogle,
       })
 
@@ -86,7 +89,7 @@ function AccountSetup() {
 
       // Redirect to login after 3 seconds
       setTimeout(() => {
-        navigate({ to: '/login' })
+        navigate({ to: '/auth' })
       }, 3000)
     } catch (err: any) {
       setError(
@@ -124,7 +127,7 @@ function AccountSetup() {
             <h2 className="mb-2 text-xl font-semibold">Setup Error</h2>
             <p className="mb-4 text-gray-600">{error}</p>
             <button
-              onClick={() => navigate({ to: '/login' })}
+              onClick={() => navigate({ to: '/auth' })}
               className="w-full rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
             >
               Back to Login
@@ -149,7 +152,7 @@ function AccountSetup() {
               to the login page.
             </p>
             <button
-              onClick={() => navigate({ to: '/login' })}
+              onClick={() => navigate({ to: '/auth' })}
               className="w-full rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
             >
               Continue to Login
@@ -168,8 +171,8 @@ function AccountSetup() {
             Complete Your Account Setup
           </h1>
           <p className="text-gray-600">
-            Welcome {setupData?.employee.firstName}! Please set up your account
-            to continue.
+            Welcome {setupData?.firstName}! Please set up your account to
+            continue.
           </p>
         </div>
 
@@ -183,22 +186,22 @@ function AccountSetup() {
           <h3 className="mb-2 font-medium">Employee Information</h3>
           <div className="space-y-1 text-sm text-gray-600">
             <p>
-              <strong>Name:</strong> {setupData?.employee.firstName}{' '}
-              {setupData?.employee.lastName}
+              <strong>Name:</strong> {setupData?.firstName}{' '}
+              {setupData?.lastName}
             </p>
             <p>
-              <strong>Email:</strong> {setupData?.employee.email}
+              <strong>Email:</strong> {setupData?.email}
             </p>
             <p>
-              <strong>Position:</strong> {setupData?.employee.position}
+              <strong>Position:</strong> {setupData?.position}
             </p>
             <p>
-              <strong>Department:</strong> {setupData?.employee.department}
+              <strong>Department:</strong> {setupData?.department}
             </p>
           </div>
         </div>
 
-        {setupData?.needsPasswordSetup && (
+        {setupData?.needsPasswordReset && (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label
@@ -245,7 +248,7 @@ function AccountSetup() {
               />
             </div>
 
-            {setupData?.canLinkGoogle && (
+            {!setupData?.isGoogleLinked && (
               <div className="flex items-center space-x-2">
                 <input
                   type="checkbox"
@@ -282,7 +285,7 @@ function AccountSetup() {
           </form>
         )}
 
-        {setupData?.canLinkGoogle && !setupData?.needsPasswordSetup && (
+        {!setupData?.isGoogleLinked && !setupData?.needsPasswordReset && (
           <div className="space-y-4">
             <p className="text-center text-sm text-gray-600">
               You can link your Google account to make logging in easier.
@@ -294,7 +297,7 @@ function AccountSetup() {
               Link Google Account
             </button>
             <button
-              onClick={() => navigate({ to: '/login' })}
+              onClick={() => navigate({ to: '/auth' })}
               className="w-full rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
             >
               Continue without Google

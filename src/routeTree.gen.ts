@@ -9,8 +9,11 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
+import { Route as FirstLoginRouteImport } from './routes/first-login'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AccountSetupRouteImport } from './routes/account-setup'
 import { Route as AccountRouteImport } from './routes/account'
@@ -19,12 +22,18 @@ import { Route as UserTimeclockRouteImport } from './routes/user/timeclock'
 import { Route as UserProfileRouteImport } from './routes/user/profile'
 import { Route as UserLeaveRouteImport } from './routes/user/leave'
 import { Route as UserDirectoryRouteImport } from './routes/user/directory'
+import { Route as AuthErrorRouteImport } from './routes/auth/error'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
 import { Route as AdminLeaveRouteImport } from './routes/admin/leave'
 import { Route as AdminEmployeesRouteImport } from './routes/admin/employees'
 import { Route as AdminAttendanceRouteImport } from './routes/admin/attendance'
 import { Route as AccountSetupSuccessRouteImport } from './routes/account-setup/success'
 
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
@@ -33,6 +42,16 @@ const OnboardingRoute = OnboardingRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FirstLoginRoute = FirstLoginRouteImport.update({
+  id: '/first-login',
+  path: '/first-login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -75,6 +94,11 @@ const UserDirectoryRoute = UserDirectoryRouteImport.update({
   path: '/user/directory',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthErrorRoute = AuthErrorRouteImport.update({
+  id: '/error',
+  path: '/error',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/callback',
   path: '/callback',
@@ -106,13 +130,17 @@ export interface FileRoutesByFullPath {
   '/account': typeof AccountRoute
   '/account-setup': typeof AccountSetupRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
+  '/first-login': typeof FirstLoginRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/account-setup/success': typeof AccountSetupSuccessRoute
   '/admin/attendance': typeof AdminAttendanceRoute
   '/admin/employees': typeof AdminEmployeesRoute
   '/admin/leave': typeof AdminLeaveRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/auth/error': typeof AuthErrorRoute
   '/user/directory': typeof UserDirectoryRoute
   '/user/leave': typeof UserLeaveRoute
   '/user/profile': typeof UserProfileRoute
@@ -123,13 +151,17 @@ export interface FileRoutesByTo {
   '/account': typeof AccountRoute
   '/account-setup': typeof AccountSetupRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
+  '/first-login': typeof FirstLoginRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/account-setup/success': typeof AccountSetupSuccessRoute
   '/admin/attendance': typeof AdminAttendanceRoute
   '/admin/employees': typeof AdminEmployeesRoute
   '/admin/leave': typeof AdminLeaveRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/auth/error': typeof AuthErrorRoute
   '/user/directory': typeof UserDirectoryRoute
   '/user/leave': typeof UserLeaveRoute
   '/user/profile': typeof UserProfileRoute
@@ -141,13 +173,17 @@ export interface FileRoutesById {
   '/account': typeof AccountRoute
   '/account-setup': typeof AccountSetupRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
+  '/first-login': typeof FirstLoginRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/account-setup/success': typeof AccountSetupSuccessRoute
   '/admin/attendance': typeof AdminAttendanceRoute
   '/admin/employees': typeof AdminEmployeesRoute
   '/admin/leave': typeof AdminLeaveRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/auth/error': typeof AuthErrorRoute
   '/user/directory': typeof UserDirectoryRoute
   '/user/leave': typeof UserLeaveRoute
   '/user/profile': typeof UserProfileRoute
@@ -160,13 +196,17 @@ export interface FileRouteTypes {
     | '/account'
     | '/account-setup'
     | '/auth'
+    | '/first-login'
+    | '/forgot-password'
     | '/login'
     | '/onboarding'
+    | '/reset-password'
     | '/account-setup/success'
     | '/admin/attendance'
     | '/admin/employees'
     | '/admin/leave'
     | '/auth/callback'
+    | '/auth/error'
     | '/user/directory'
     | '/user/leave'
     | '/user/profile'
@@ -177,13 +217,17 @@ export interface FileRouteTypes {
     | '/account'
     | '/account-setup'
     | '/auth'
+    | '/first-login'
+    | '/forgot-password'
     | '/login'
     | '/onboarding'
+    | '/reset-password'
     | '/account-setup/success'
     | '/admin/attendance'
     | '/admin/employees'
     | '/admin/leave'
     | '/auth/callback'
+    | '/auth/error'
     | '/user/directory'
     | '/user/leave'
     | '/user/profile'
@@ -194,13 +238,17 @@ export interface FileRouteTypes {
     | '/account'
     | '/account-setup'
     | '/auth'
+    | '/first-login'
+    | '/forgot-password'
     | '/login'
     | '/onboarding'
+    | '/reset-password'
     | '/account-setup/success'
     | '/admin/attendance'
     | '/admin/employees'
     | '/admin/leave'
     | '/auth/callback'
+    | '/auth/error'
     | '/user/directory'
     | '/user/leave'
     | '/user/profile'
@@ -212,8 +260,11 @@ export interface RootRouteChildren {
   AccountRoute: typeof AccountRoute
   AccountSetupRoute: typeof AccountSetupRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
+  FirstLoginRoute: typeof FirstLoginRoute
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   AdminAttendanceRoute: typeof AdminAttendanceRoute
   AdminEmployeesRoute: typeof AdminEmployeesRoute
   AdminLeaveRoute: typeof AdminLeaveRoute
@@ -225,6 +276,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/onboarding': {
       id: '/onboarding'
       path: '/onboarding'
@@ -237,6 +295,20 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/first-login': {
+      id: '/first-login'
+      path: '/first-login'
+      fullPath: '/first-login'
+      preLoaderRoute: typeof FirstLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -295,6 +367,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UserDirectoryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/error': {
+      id: '/auth/error'
+      path: '/error'
+      fullPath: '/auth/error'
+      preLoaderRoute: typeof AuthErrorRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/auth/callback': {
       id: '/auth/callback'
       path: '/callback'
@@ -347,10 +426,12 @@ const AccountSetupRouteWithChildren = AccountSetupRoute._addFileChildren(
 
 interface AuthRouteChildren {
   AuthCallbackRoute: typeof AuthCallbackRoute
+  AuthErrorRoute: typeof AuthErrorRoute
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
   AuthCallbackRoute: AuthCallbackRoute,
+  AuthErrorRoute: AuthErrorRoute,
 }
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
@@ -360,8 +441,11 @@ const rootRouteChildren: RootRouteChildren = {
   AccountRoute: AccountRoute,
   AccountSetupRoute: AccountSetupRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
+  FirstLoginRoute: FirstLoginRoute,
+  ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   AdminAttendanceRoute: AdminAttendanceRoute,
   AdminEmployeesRoute: AdminEmployeesRoute,
   AdminLeaveRoute: AdminLeaveRoute,

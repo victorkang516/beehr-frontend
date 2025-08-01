@@ -14,7 +14,7 @@ function OnboardingPage() {
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!isAuthenticated) {
-      navigate({ to: '/login' })
+      navigate({ to: '/auth' })
     }
   }, [isAuthenticated, navigate])
 

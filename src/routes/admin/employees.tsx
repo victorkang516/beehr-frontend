@@ -28,20 +28,6 @@ interface Employee {
   updatedAt: string
 }
 
-// Form data type for creating employee
-interface CreateEmployeeRequest {
-  firstName: string
-  lastName: string
-  email: string
-  password: string
-  department: string
-  position: string
-  role?: 'Owner' | 'HR Admin' | 'Manager' | 'Employee'
-  joinDate: string
-  phone?: string
-  address?: string
-}
-
 type SortField =
   | 'firstName'
   | 'lastName'
@@ -66,7 +52,6 @@ function AdminEmployees() {
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(5)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
 
   const { addToast } = useToast()
 
@@ -85,7 +70,6 @@ function AdminEmployees() {
       return
     }
 
-    setIsLoading(true)
     try {
       const response = await api.get<Employee[]>(
         `/employees/company/${user.organization.id}`
@@ -106,8 +90,6 @@ function AdminEmployees() {
       const networkConfig = toastConfig.networkError()
       addToast(networkConfig.type, networkConfig.title, networkConfig.message)
       console.error('Failed to load employees:', error)
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -155,46 +137,6 @@ function AdminEmployees() {
 
   const handleCreateEmployee = () => {
     setIsCreateModalOpen(true)
-  }
-
-  const handleSaveEmployee = async (newEmployeeData: CreateEmployeeRequest) => {
-    setIsLoading(true)
-    try {
-      const response = await api.post<Employee>('/employees', newEmployeeData)
-      if (response.data) {
-        // Add the new employee to the list
-        setEmployees(prev => [...prev, response.data!])
-        setIsCreateModalOpen(false)
-
-        // Show success toast using predefined configuration
-        const successConfig = toastConfig.employeeCreated(
-          `${response.data.firstName} ${response.data.lastName}`
-        )
-        addToast(
-          successConfig.type,
-          successConfig.title,
-          successConfig.message,
-          successConfig.duration
-        )
-
-        console.log('Employee created successfully:', response.data)
-      } else if (response.error) {
-        // Show error toast instead of alert
-        addToast('error', 'Failed to Create Employee', response.error)
-        console.error('Failed to create employee:', response.error)
-      }
-    } catch (error) {
-      // Show error toast for unexpected errors
-      const networkConfig = toastConfig.networkError()
-      addToast(
-        networkConfig.type,
-        networkConfig.title,
-        'An unexpected error occurred while creating the employee. Please try again.'
-      )
-      console.error('Error creating employee:', error)
-    } finally {
-      setIsLoading(false)
-    }
   }
 
   const getSortIcon = (field: SortField) => {
@@ -519,21 +461,26 @@ function AdminEmployees() {
           </div>
 
           {/* Create Employee Modal */}
-          {isLoading && (
-            <div className="bg-opacity-25 fixed inset-0 z-40 flex items-center justify-center bg-black">
-              <div className="rounded-lg bg-white p-6 shadow-xl">
-                <div className="flex items-center space-x-3">
-                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"></div>
-                  <span className="text-gray-700">Processing...</span>
-                </div>
-              </div>
-            </div>
-          )}
-
           <CreateEmployeeModal
             isOpen={isCreateModalOpen}
             onClose={() => setIsCreateModalOpen(false)}
-            onSave={handleSaveEmployee}
+            onSuccess={data => {
+              // Add the new employee to the list
+              setEmployees(prev => [...prev, data])
+
+              // Show success toast using predefined configuration
+              const successConfig = toastConfig.employeeCreated(
+                `${data.firstName} ${data.lastName}`
+              )
+              addToast(
+                successConfig.type,
+                successConfig.title,
+                successConfig.message,
+                successConfig.duration
+              )
+
+              console.log('Employee created successfully:', data)
+            }}
           />
         </div>
       </RoleProtected>

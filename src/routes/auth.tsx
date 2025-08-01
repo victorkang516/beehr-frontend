@@ -7,6 +7,7 @@ import {
 } from '@components/index'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
+import { api } from '@utility/api'
 
 export const Route = createFileRoute('/auth')({
   component: AuthPage,
@@ -54,43 +55,43 @@ function AuthPage() {
     setLoading(true)
 
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(signInData),
-      })
+      const response = await api.post('/auth/login', signInData)
 
-      const data = await response.json()
+      console.log('Sign In Response:', response)
 
-      console.log('Sign In Response:', data)
-
-      if (response.ok) {
+      if (response.status === 200 && response.data) {
         // Check if user needs to complete account setup
-        if (data.user && !data.user.firstLoginCompleted) {
+        if (response.data.user && !response.data.user.firstLoginCompleted) {
+          // Store the token temporarily to check account setup status
+          const tempToken = response.data.access_token
+          localStorage.setItem('access_token', tempToken)
+
           // Check if user has an account setup token
           try {
-            const statusResponse = await fetch(
-              `/api/employees/account-setup/status`,
-              {
-                headers: {
-                  Authorization: `Bearer ${data.access_token}`,
-                },
-              }
+            const statusResponse = await api.get(
+              '/employees/account-setup/status'
             )
 
-            if (statusResponse.ok) {
-              const statusData = await statusResponse.json()
-              if (statusData.requiresSetup && statusData.setupToken) {
-                // Redirect to account setup with token
+            if (statusResponse.status === 200 && statusResponse.data) {
+              if (
+                statusResponse.data.requiresSetup &&
+                statusResponse.data.setupToken
+              ) {
+                // Clear the temporary token since user needs to complete setup
+                localStorage.removeItem('access_token')
+
+                // Redirect to first login with token
                 navigate({
-                  to: '/account-setup',
-                  search: { token: statusData.setupToken },
+                  to: '/first-login',
+                  search: { token: statusResponse.data.setupToken },
                 })
                 return
               }
             }
           } catch (err) {
             console.error('Failed to check account setup status:', err)
+            // Clear the temporary token on error
+            localStorage.removeItem('access_token')
           }
 
           addToast(
@@ -111,7 +112,7 @@ function AuthPage() {
         addToast(
           'error',
           'Sign In Failed',
-          data.message || 'Invalid credentials. Please try again.'
+          response.error || 'Invalid credentials. Please try again.'
         )
       }
     } catch (error) {
@@ -140,21 +141,15 @@ function AuthPage() {
     setLoading(true)
 
     try {
-      const response = await fetch('/api/auth/register-owner', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          firstName: signUpData.firstName,
-          lastName: signUpData.lastName,
-          email: signUpData.email,
-          password: signUpData.password,
-          organizationName: signUpData.organizationName,
-        }),
+      const response = await api.post('/auth/register-owner', {
+        firstName: signUpData.firstName,
+        lastName: signUpData.lastName,
+        email: signUpData.email,
+        password: signUpData.password,
+        organizationName: signUpData.organizationName,
       })
 
-      const data = await response.json()
-
-      if (response.ok) {
+      if (response.status === 200 || response.status === 201) {
         addToast(
           'success',
           'Organization Created Successfully!',
@@ -165,7 +160,7 @@ function AuthPage() {
         addToast(
           'error',
           'Registration Failed',
-          data.message || 'Failed to create account. Please try again.'
+          response.error || 'Failed to create account. Please try again.'
         )
       }
     } catch (error) {
@@ -181,7 +176,7 @@ function AuthPage() {
 
   const handleGoogleAuth = () => {
     // Redirect to Google OAuth endpoint
-    window.location.href = '/api/auth/google'
+    window.location.href = 'http://localhost:3001/api/auth/google'
   }
 
   return (

@@ -34,14 +34,14 @@ function AccountSetupSuccess() {
           setIsProcessing(false)
           // Still redirect to login on error
           setTimeout(() => {
-            navigate({ to: '/login' })
+            navigate({ to: '/auth' })
           }, 3000)
         })
     } else {
       setIsProcessing(false)
       // No token, redirect to login
       setTimeout(() => {
-        navigate({ to: '/login' })
+        navigate({ to: '/auth' })
       }, 3000)
     }
   }, [token, refreshUser, navigate])
@@ -71,7 +71,7 @@ function AccountSetupSuccess() {
           )}
 
           <button
-            onClick={() => navigate({ to: token ? '/' : '/login' })}
+            onClick={() => navigate({ to: token ? '/' : '/auth' })}
             className="rounded bg-blue-600 px-6 py-2 text-white transition-colors hover:bg-blue-700"
           >
             {token ? 'Go to Dashboard' : 'Go to Login'}

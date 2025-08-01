@@ -24,7 +24,7 @@ export const ProtectedRoute = ({
     // Only navigate if not loading
     if (!isLoading) {
       if (!isAuthenticated) {
-        navigate({ to: '/login' })
+        navigate({ to: '/auth' })
       } else if (requiresOnboarding) {
         navigate({ to: '/onboarding' })
       }
